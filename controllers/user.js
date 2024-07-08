@@ -1,50 +1,80 @@
 const User = require("../models/User.model");
 
-exports.createUser = async (req, res, next) => {
-    const {name, email, password, role, isActive} = req.body
+const createUser = async (req, res) => {
+  const { name, email, password } = req.body;
   try {
-    const user = await User.query().insert({name, email, password, role, isActive});
-    res.status(201).json(user);
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+    console.log("Creating user with:", { name, email, password });
+    const user = await User.query().insert({ name, email, password });
+    return res.status(201).json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error creating user:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
-exports.getAllUsers = async (req, res, next) => {
+const getAllUsers = async (req, res) => {
   try {
     const users = await User.query();
-    res.status(200).json(users);
+    return res.status(200).json(users);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching users:", error.message);
+    return res.status(500).json({ error: error.message });
   }
 };
 
-exports.getUserById = async (req, res, next) => {
+const getUserById = async (req, res) => {
   try {
     const user = await User.query().findById(req.params.id);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    res.status(200).json(user);
+    return res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching user by ID:", error.message);
+    return res.status(500).json({ error: error.message });
   }
 };
 
-exports.editUser = async (req, res, next) => {
+const editUser = async (req, res) => {
+  const { id } = req.params;
+  const userData = req.body;
   try {
-    await User.query().patchAndFetchById(req.params.id, req.body);
-    res.status(200).json(user);
+    if (!userData) {
+      return res.status(400).json({ error: "No data provided for update" });
+    }
+    const user = await User.query().patchAndFetchById(id, userData);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    return res.status(200).json(user);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Error editing user:", error.message);
+    return res.status(400).json({ error: error.message });
   }
 };
 
-exports.deleteUser = async (req, res, next) => {
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
   try {
-    await User.query().deleteById(req.params.id);
-    res.status(200).json(user);
+    const user = await User.query().findById(id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    await User.query().deleteById(id);
+    return res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Error deleting user:", error.message);
+    return res.status(400).json({ error: error.message });
   }
+};
+
+module.exports = {
+  createUser,
+  getAllUsers,
+  getUserById,
+  editUser,
+  deleteUser,
 };
